@@ -1,0 +1,5 @@
+roms
+**out
+*.bin
+*.o
+*.p
