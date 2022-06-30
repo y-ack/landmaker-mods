@@ -1,4 +1,4 @@
-# getting started / prerequisites
+## getting started / prerequisites
 you will need a linux environment (wsl, mingw...) with `ruby` and `make`
 
 **you will also need [the macroassembler as](http://john.ccac.rwth-aachen.de:8000/as/) providing `asl`.**
@@ -13,7 +13,7 @@ make
 make install
 ```
 
-# usage / applying assembly patches
+## usage / applying assembly patches
 **NOTE:** make sure original roms `landmakr.zip` and `landmakrj.zip` are in the `roms/` folder.
 
 run `make` in any patch subfolder 
@@ -31,7 +31,7 @@ the steps for patching are:
 4) deinterleave patched binary into original rom files
 5) package up new files, create ips patches
 
-# development / how to make a patch (wip)
+## development / how to make a patch (wip)
 1) copy `difficulty/` template with assembler source and makefile
 2) write patch
 3) `make landmakr` or `make landmakrj`
@@ -51,7 +51,7 @@ for more information on the shift tables and their derivation, see: < wip >
 
 rom map: < wip >
 
-# other
+## other
 https://github.com/y-ack/landmaker-color-mod
 
 y's land maker investigation home page: < wip >
