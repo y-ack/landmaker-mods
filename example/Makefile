@@ -30,19 +30,17 @@ landmakr_program.bin: $(ROMDIR)/landmakr/
 %_patched.bin: %.o
 	$(P2BIN) $< $@
 
-$(landmakrj_program_romfiles): landmakrj_patched.bin
-	$(DEINTERLEAVE) -i $< -o $@
-$(landmakr_program_romfiles): landmakr_patched.bin
-	$(DEINTERLEAVE) -i $< -o $@
 
-$(OUTDIR)/landmakrj/: $(ROMDIR)/landmakrj/ $(landmakrj_program_romfiles)
+$(OUTDIR)/landmakrj/: $(ROMDIR)/landmakrj/ landmakrj_patched.bin
+	$(DEINTERLEAVE) -i landmakrj_patched.bin -o $(landmakrj_program_romfiles)
 	mkdir -p $@
 	find $< -mindepth 1 -maxdepth 1 -type f -exec cp -t $@ {} +
 	mv $(landmakrj_program_romfiles) $@
 
-$(OUTDIR)/landmakr/: $(ROMDIR)/landmakr/ $(landmakr_program_romfiles)
+$(OUTDIR)/landmakr/: $(ROMDIR)/landmakr/ landmakr_patched.bin
+	$(DEINTERLEAVE) -i landmakr_patched.bin -o $(landmakr_program_romfiles)
 	mkdir -p $@
-	find $< -mindepth 1 -maxdepth 1 -type f -exec cp -t $@ {} +
+	find $< -mindepth 1 -maxdepth 1 -type f -exec cp --preserve -t $@ {} +
 	mv $(landmakr_program_romfiles) $@
 
 

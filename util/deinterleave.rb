@@ -26,11 +26,16 @@ outfiles = args["-o"]
 
 
 fd_in = File.open(infiles[0], "rb")
-fds_out = outfiles.map{|filename| File.open(filename, "wb")}
+bufs_out = outfiles.map{|filename| Array.new(infiles[0].size() / outfiles.length())}
 
 fd_in.each_byte.each_with_index do |x, i|
-	fds_out[i % outfiles.length()].write(x.chr)
+	bufs_out[i % outfiles.length()][i / outfiles.length()] = x
 end
 
+fds_out = outfiles.map{|filename| File.open(filename, "wb")}
+
+fds_out.each_with_index do |f, i|
+	f.write(bufs_out[i].pack('C*'))
+	f.close()
+end
 fd_in.close()
-fds_out.each {|f| f.close()}
