@@ -2,50 +2,56 @@ landmakrj_program_romfiles = e61-13.20 e61-12.19 e61-11.18 e61-10.17
 landmakr_program_romfiles = e61-19.20 e61-18.19 e61-17.18 e61-16.17
 ROMDIR = ../roms
 SRC = patch.S
+TARGETS = landmakr landmakrj
 
 OUTDIR = out
 AS = asl
 P2BIN = p2bin
+ZIP = zip
+IPS = uips c
 INTERLEAVE = ../util/interleave.rb
 DEINTERLEAVE = ../util/deinterleave.rb
+ASFLAGS=-i . -i .. -n -U -q
 
-ASFLAGS=-i . -n -U -q
+.PHONY: landmakr landmakrj ips landmakr_ips landmakrj_ips
+.PRECIOUS: %_program.bin %_patched.bin
 
-all: $(OUTDIR)/landmakr/ $(OUTDIR)/landmakrj/
+all: ips $(TARGETS)
+landmakr: $(OUTDIR)/landmakr/
+landmakrj: $(OUTDIR)/landmakrj/
 
-$(ROMDIR)/landmakrj/: $(ROMDIR)/landmakrj.zip
+$(ROMDIR)/%/: $(ROMDIR)/%.zip
 	unzip $< -d $@
-$(ROMDIR)/landmakr/: $(ROMDIR)/landmakr.zip
-	unzip $< -d $@
 
-landmakrj_program.bin: $(ROMDIR)/landmakrj/
-	$(INTERLEAVE) -i $(addprefix $<,$(landmakrj_program_romfiles)) -o $@
+%_program.bin: $(ROMDIR)/%/
+	$(INTERLEAVE) -i $(addprefix $<,$($*_program_romfiles)) -o $@
 
-landmakr_program.bin: $(ROMDIR)/landmakr/
-	$(INTERLEAVE) -i $(addprefix $<,$(landmakr_program_romfiles)) -o $@
-
-%.o: %_program.bin
+%_patched.o: %_program.bin $(SRC)
+	@echo $*
 	$(AS) $(SRC) -D $* $(ASFLAGS) -o $@
 
-%_patched.bin: %.o
-	$(P2BIN) $< $@
+%_patched.bin: %_patched.o
+	$(P2BIN) $< $@ -r 0x0-0x1FFFFF
 
-
-$(OUTDIR)/landmakrj/: $(ROMDIR)/landmakrj/ landmakrj_patched.bin
-	$(DEINTERLEAVE) -i landmakrj_patched.bin -o $(landmakrj_program_romfiles)
+$(OUTDIR)/%/: $(ROMDIR)/% %_patched.bin
 	mkdir -p $@
-	find $< -mindepth 1 -maxdepth 1 -type f -exec cp -t $@ {} +
-	mv $(landmakrj_program_romfiles) $@
+	cp -urt $@ $</*
+	$(DEINTERLEAVE) -i $*_patched.bin -o $($*_program_romfiles)
+	mv $($*_program_romfiles) $@
 
-$(OUTDIR)/landmakr/: $(ROMDIR)/landmakr/ landmakr_patched.bin
-	$(DEINTERLEAVE) -i landmakr_patched.bin -o $(landmakr_program_romfiles)
-	mkdir -p $@
-	find $< -mindepth 1 -maxdepth 1 -type f -exec cp --preserve -t $@ {} +
-	mv $(landmakr_program_romfiles) $@
+
+ips: landmakr_ips landmakrj_ips
+landmakr_ips: landmakr $(addsuffix .ips,$(addprefix $(OUTDIR)/landmakr/,$(landmakr_program_romfiles)))
+landmakrj_ips: landmakrj $(addsuffix .ips,$(addprefix $(OUTDIR)/landmakrj/,$(landmakrj_program_romfiles)))
+
+$(OUTDIR)/landmakrj/%.ips: $(OUTDIR)/landmakrj/% $(ROMDIR)/landmakrj/%
+	$(IPS) $@ $^
+$(OUTDIR)/landmakr/%.ips: $(OUTDIR)/landmakr/% $(ROMDIR)/landmakr/%
+	$(IPS) $@ $^
 
 
 clean:
 	@-rm -r $(OUTDIR)
 	@-rm *.o
-	@-rm landmakrj_patched.bin landmakr_patched.bin
-	@-rm landmakrj_program.bin landmakr_program.bin
+	@-rm *.bin
+

@@ -1,7 +1,7 @@
 	CPU 68000
 	PADDING OFF
 	ORG $000000
-	IFDEF landmakrj
+	IFDEF LANDMAKRJ
 	BINCLUDE "landmakrj_program.bin"
 	ELSE
 	BINCLUDE "landmakr_program.bin"
@@ -13,7 +13,7 @@
 ;; shift points:
 ;; 1154C, 13954, 15BFC, 91470, A06C8, A06D4, A06F0, A07E2, A1114, A112C, A1416
 ;;
-	INCLUDE "../shifts.S"
+	INCLUDE "shifts.S"
 
 ;; end of defined rom data, beginning of void space
 ROM_FREE = $11B364 + SHIFT_A1416
@@ -36,7 +36,7 @@ ROM_FREE = $11B364 + SHIFT_A1416
 ;; per-stage cpu "decision time" delay table
 ;; values originally ranged from 0 (gaira, bonus) to 180 (hiryu)
 	ORG $0A04BA + SHIFT_91470
-	dc.w	0		; hiryu
+	dc.w	0		; hiryu (180)
 	dc.w	0		; aifa
 	dc.w	0		; soumei
 	dc.w	0		; renki

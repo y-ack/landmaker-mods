@@ -1,4 +1,4 @@
-roms
+roms/*
 **out
 *.bin
 *.o
