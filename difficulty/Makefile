@@ -14,9 +14,9 @@ DEINTERLEAVE = ../util/deinterleave.rb
 ASFLAGS=-i . -i .. -n -U -q
 
 .PHONY: landmakr landmakrj ips landmakr_ips landmakrj_ips
-.PRECIOUS: %_program.bin %_patched.bin
+.PRECIOUS: %_program.bin
 
-all: ips $(TARGETS)
+all: $(TARGETS)
 landmakr: $(OUTDIR)/landmakr/
 landmakrj: $(OUTDIR)/landmakrj/
 
@@ -40,15 +40,13 @@ $(OUTDIR)/%/: $(ROMDIR)/% %_patched.bin
 	mv $($*_program_romfiles) $@
 
 
-ips: landmakr_ips landmakrj_ips
-landmakr_ips: landmakr $(addsuffix .ips,$(addprefix $(OUTDIR)/landmakr/,$(landmakr_program_romfiles)))
-landmakrj_ips: landmakrj $(addsuffix .ips,$(addprefix $(OUTDIR)/landmakrj/,$(landmakrj_program_romfiles)))
-
 $(OUTDIR)/landmakrj/%.ips: $(OUTDIR)/landmakrj/% $(ROMDIR)/landmakrj/%
 	$(IPS) $@ $^
 $(OUTDIR)/landmakr/%.ips: $(OUTDIR)/landmakr/% $(ROMDIR)/landmakr/%
 	$(IPS) $@ $^
-
+ips: landmakr_ips landmakrj_ips
+landmakr_ips: landmakr $(addsuffix .ips,$(addprefix $(OUTDIR)/landmakr/,$(landmakr_program_romfiles)))
+landmakrj_ips: landmakrj $(addsuffix .ips,$(addprefix $(OUTDIR)/landmakrj/,$(landmakrj_program_romfiles)))
 
 clean:
 	@-rm -r $(OUTDIR)
