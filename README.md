@@ -32,7 +32,7 @@ the steps for patching are:
 5) package up new files, create ips patches
 
 ## development / how to make a patch (wip)
-1) copy `difficulty/` template with assembler source and makefile
+1) copy `example/` template with assembler source and makefile
 2) write patch
 3) `make landmakr` or `make landmakrj`
 
