@@ -56,7 +56,7 @@ $(ROMDIR)/%/: $(ROMDIR)/%.zip
 
 $(OUTDIR)/%/: $(ROMDIR)/%
 	mkdir -p $@
-	cp -urt $@ $</*
+	cp -uprt $@ $</*
 
 clean:
 	@-rm -r $(OUTDIR)
