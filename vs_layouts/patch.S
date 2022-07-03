@@ -24,27 +24,26 @@ IS_PRACTICE = -$609E
 GAME_STATE = -$60C0
 ANOTHERWORLD = -$608E
 
-;; game control loop: 2p vs stage selection
+;; game control loop:
+;; 2p vs stage selection
 	ORG $8E470 + SHIFT_15FBC 
-	jsr     (vs_stage).l        ; get a random 0-11
-.end_mode_check = $8E4A6 + SHIFT_15FBC
-	bra.b   .end_mode_check     ; (end of cond. branch)
+	jmp     (vs_stage).l        ; set random 0-10
+end_mode_check = $8E4D2 + SHIFT_15FBC
+	; returns to end_mode_check
+;	ASSERTPC $8E488 + SHIFT_15FBC
 
-	ORG $8E48A + SHIFT_15FBC
-; end offset to match:
-	ASSERTPC $8E48A + SHIFT_15FBC
+;; game control loop:
+;; patch over win screen/music check
+	ORG $8E562 + SHIFT_15FBC
 
+;	ASSERTPC $8E56A + SHIFT_15FBC
 
 ;; game control loop: 
-;; patch over bonus/practice end check
+;; patch over bonus/practice screen check
 	ORG $8E616 + SHIFT_15FBC
-	jsr     (bonus_check).l     ; D0 = do bonus screens?
-	tst.w   D0
-	bne.b   $8E62E + SHIFT_15FBC
-	bra.b   $8E636 + SHIFT_15FBC
-
-	ORG $8E61C + SHIFT_15FBC
-;	ASSERTPC $8E61C + SHIFT_15FBC
+	jmp     (bonus_check).l
+	; returns to appropriate branch
+;	ASSERTPC $8E62C + SHIFT_15FBC
 
 
 ;; round setup after stage selection + $10
@@ -85,7 +84,7 @@ vs_stage:
 	move.w  .b5div3(PC,D0*2),D0 ; pseudo-div 3 
 	nop
 	move.w  D0,STAGE(A5)
-	rts                      
+	jmp     end_mode_check
 .b5div3:
 	dc.w 0,0,0,1,1,1 ; 6
 	dc.w 2,2,2,3,3,3 ; 12
@@ -109,6 +108,8 @@ vs_stage:
 	rts
 
 
+lab_bonus_screen = $8E62E + SHIFT_15FBC
+lab_no_bonus = $8E636 + SHIFT_15FBC
 bonus_check:
 ; normal practice check
 	tst.w   IS_PRACTICE(A5)
@@ -119,16 +120,13 @@ bonus_check:
 ; back to normal check
   cmpi.w  #$a,STAGE(A5)
   blt.b   .no_bonus
-  bra.b   .bonus
+	jmp     lab_bonus_screen
 .practice:
 	cmpi.w  #3,STAGE(A5)
 	blt.b   .no_bonus
-.bonus:
-	move.w  #1,D0
-	rts
+	jmp     lab_bonus_screen
 .no_bonus:
-	move.w  #0,D0
-	rts
+	jmp     lab_no_bonus
 
 ;; ** notes
 
