@@ -25,18 +25,26 @@ GAME_STATE = -$60C0
 ANOTHERWORLD = -$608E
 
 ;; game control loop: 2p vs stage selection
-;; original code as reference
 	ORG $8E470 + SHIFT_15FBC 
-	jsr     (p_rand).l          ; get a random 0-3
-	andi.w  #$3,D0
-	addq.w  #1,D0               ; + 1
-	add.w   STAGE(A5),D0        ; + stage_num
-	andi.w  #$7,D0              ; % ranju stage
-	move.w  D0,STAGE(A5)        ; =>stage_num
+	jsr     (vs_stage).l        ; get a random 0-11
 .end_mode_check = $8E4A6 + SHIFT_15FBC
 	bra.b   .end_mode_check     ; (end of cond. branch)
+
+	ORG $8E48A + SHIFT_15FBC
 ; end offset to match:
 	ASSERTPC $8E48A + SHIFT_15FBC
+
+
+;; game control loop: 
+;; patch over bonus/practice end check
+	ORG $8E616 + SHIFT_15FBC
+	jsr     (bonus_check).l     ; D0 = do bonus screens?
+	tst.w   D0
+	bne.b   $8E62E + SHIFT_15FBC
+	bra.b   $8E636 + SHIFT_15FBC
+
+	ORG $8E61C + SHIFT_15FBC
+;	ASSERTPC $8E61C + SHIFT_15FBC
 
 
 ;; round setup after stage selection + $10
@@ -63,3 +71,92 @@ ANOTHERWORLD = -$608E
 	move.w  D0,LAYOUT(A5)
 	
 	ASSERTPC $98CFC + SHIFT_91470
+
+
+	ORG ROM_FREE
+;; new 2p vs stage selection
+;; every round, random 0-10
+;; (hiryu-bonus)
+vs_stage:
+	jsr    (p_rand).l
+
+; 0.03125 bias against bonus stage
+	andi.w  #%11111,D0               ; 0-31
+	move.w  .b5div3(PC,D0*2),D0 ; pseudo-div 3 
+	nop
+	move.w  D0,STAGE(A5)
+	rts                      
+.b5div3:
+	dc.w 0,0,0,1,1,1 ; 6
+	dc.w 2,2,2,3,3,3 ; 12
+	dc.w 4,4,4,5,5,5 ; 18
+	dc.w 6,6,6,7,7,7 ; 24
+	dc.w 8,8,8,9,9,9 ; 30
+	dc.w 10,10       ; 32
+
+;; 0.00009 bias hiryu on
+;; 8 discards
+.loop_discard:
+	move.b  D0,D1
+	andi.b  #3,D1
+	cmpi.b  #11,D0
+	blt.b   (.valid_stage)
+	lsr     #4,D0
+	bra     (.loop_discard)
+.valid_stage:
+; can discard repeats at this point
+	move.w  D0,STAGE(A5)
+	rts
+
+
+bonus_check:
+; normal practice check
+	tst.w   IS_PRACTICE(A5)
+	bne.b   .practice
+; must skip if 2p vs context
+  tst.w   IS_2P_VS(A5)
+  bne.b   .no_bonus
+; back to normal check
+  cmpi.w  #$a,STAGE(A5)
+  blt.b   .no_bonus
+  bra.b   .bonus
+.practice:
+	cmpi.w  #3,STAGE(A5)
+	blt.b   .no_bonus
+.bonus:
+	move.w  #1,D0
+	rts
+.no_bonus:
+	move.w  #0,D0
+	rts
+
+;; ** notes
+
+;; cycle counting ;82+28 (134+28) 394+28
+;(avg <2: 4+8+8+8+14+10 + 4+8+8+10)
+;.loop_discard
+;	move.b D0,D1                ; 4
+;	andi.b #3,D1                ; 8
+;	cmpi.b #11,D1               ; 8
+;	blt.b  (.valid)             ; 8 nt, 10 t 
+;	lsr    #4,D0                ; 14
+;	bra    (.loop_discard)      ; 10
+;.valid:
+;	move.w D0,STAGE(A5)         ; 12
+;	rts                         ; 16
+
+;; lut method (52)
+;	andi.w #5,D0                ; 8
+;	move.w .b5div3(PC,D0*2),D0  ; 16
+;	nop
+;	move.w D0,STAGE(A5)         ; 12
+;	rts                         ; 16
+;.b5div3:
+;	dc.w 0,0,0,1,1,1 ; 6
+;	dc.w 2,2,2,3,3,3 ; 12
+;	dc.w 4,4,4,5,5,5 ; 18
+;	dc.w 6,6,6,7,7,7 ; 24
+;	dc.w 8,8,8,9,9,9 ; 30
+;	dc.w 10,10       ; 32
+
+
