@@ -35,7 +35,8 @@ end_mode_check = $8E4D2 + SHIFT_15FBC
 ;; game control loop:
 ;; patch over win screen/music check
 	ORG $8E562 + SHIFT_15FBC
-
+	jmp     (win_screen_ok).l
+	; returns to appropriate branch
 ;	ASSERTPC $8E56A + SHIFT_15FBC
 
 ;; game control loop: 
@@ -59,7 +60,6 @@ end_mode_check = $8E4D2 + SHIFT_15FBC
 	andi.w	#1,D1
 	move.w  D1,ANOTHERWORLD(A5)
 .not_vs:
-; this shift is vanilla... why?
 	asr.w   #4,D0
 	tst.l   GAME_STATE(A5)      ; is attract mode?
 	bne.b   .got_layout
@@ -80,6 +80,7 @@ vs_stage:
 	jsr    (p_rand).l
 
 ; 0.03125 bias against bonus stage
+; 48 cycles
 	andi.w  #%11111,D0               ; 0-31
 	move.w  .b5div3(PC,D0*2),D0 ; pseudo-div 3 
 	nop
@@ -93,6 +94,7 @@ vs_stage:
 	dc.w 8,8,8,9,9,9 ; 30
 	dc.w 10,10       ; 32
 
+;; slower method (avg case 106 worst 418+ c)
 ;; 0.00009 bias hiryu on
 ;; 8 discards
 .loop_discard:
@@ -105,8 +107,18 @@ vs_stage:
 .valid_stage:
 ; can discard repeats at this point
 	move.w  D0,STAGE(A5)
-	rts
+	jmp     end_mode_check
 
+
+lab_win_fall_through = $8E56A + SHIFT_15FBC
+lab_win_screen_skip = $8E588 + SHIFT_15BFC
+win_screen_ok:
+	tst.w   IS_2P_VS(A5)
+	bne     lab_win_fall_through
+; 1p mode: skip win screen on boss stages
+	cmpi.w  #$8,STAGE(A5)
+	bge     lab_win_screen_skip
+	jmp     lab_win_fall_through
 
 lab_bonus_screen = $8E62E + SHIFT_15FBC
 lab_no_bonus = $8E636 + SHIFT_15FBC
@@ -127,34 +139,3 @@ bonus_check:
 	jmp     lab_bonus_screen
 .no_bonus:
 	jmp     lab_no_bonus
-
-;; ** notes
-
-;; cycle counting ;82+28 (134+28) 394+28
-;(avg <2: 4+8+8+8+14+10 + 4+8+8+10)
-;.loop_discard
-;	move.b D0,D1                ; 4
-;	andi.b #3,D1                ; 8
-;	cmpi.b #11,D1               ; 8
-;	blt.b  (.valid)             ; 8 nt, 10 t 
-;	lsr    #4,D0                ; 14
-;	bra    (.loop_discard)      ; 10
-;.valid:
-;	move.w D0,STAGE(A5)         ; 12
-;	rts                         ; 16
-
-;; lut method (52)
-;	andi.w #5,D0                ; 8
-;	move.w .b5div3(PC,D0*2),D0  ; 16
-;	nop
-;	move.w D0,STAGE(A5)         ; 12
-;	rts                         ; 16
-;.b5div3:
-;	dc.w 0,0,0,1,1,1 ; 6
-;	dc.w 2,2,2,3,3,3 ; 12
-;	dc.w 4,4,4,5,5,5 ; 18
-;	dc.w 6,6,6,7,7,7 ; 24
-;	dc.w 8,8,8,9,9,9 ; 30
-;	dc.w 10,10       ; 32
-
-
