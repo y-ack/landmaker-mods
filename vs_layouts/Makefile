@@ -37,9 +37,9 @@ $(LANDMAKRJ_OUT_ROMFILES): $(OUTDIR)/landmakrj/ landmakrj_patched.bin
 
 $(IPSDIR)/%/:
 	mkdir -p $@
-$(IPSDIR)/landmakrj/%.ips: $(OUTDIR)/landmakrj/% $(ROMDIR)/landmakrj/%
+$(IPSDIR)/landmakrj/%.ips: $(ROMDIR)/landmakrj/% $(OUTDIR)/landmakrj/%
 	$(IPS) $@ $^
-$(IPSDIR)/landmakr/%.ips: $(OUTDIR)/landmakr/% $(ROMDIR)/landmakr/%
+$(IPSDIR)/landmakr/%.ips: $(ROMDIR)/landmakr/% $(OUTDIR)/landmakr/%
 	$(IPS) $@ $^
 
 $(ROMDIR)/%/: $(ROMDIR)/%.zip
