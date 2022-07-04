@@ -106,7 +106,7 @@ p2_flare_push_return = $97D4C + SHIFT_91470
 	ORG $A9862 + SHIFT_A1416
 	jmp     (flare_item_set_push).l
 	nop
-flare_set_push_return = $A986A + SHIFT_91470
+flare_set_push_return = $A986A + SHIFT_A1416
 	ASSERTPC flare_set_push_return
 
 
