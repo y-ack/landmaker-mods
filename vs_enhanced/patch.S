@@ -72,6 +72,15 @@ load_boards_return = $98D16 + SHIFT_91470
 	tst.w   ANOTHERWORLDHACK(A5)
 
 
+;; pushback bug
+	ORG $953B8 + SHIFT_91470
+	jmp    (pushback_bugfix).l
+	nop
+try_pushback_return = $953C0 + SHIFT_91470
+no_pushback_return  = $953C8 + SHIFT_91470
+	ASSERTPC try_pushback_return
+
+
 
 ;; nerf plat stall
 ;; per-frame push/back type handling
@@ -190,6 +199,23 @@ load_boards:
 	jsr     (p1_load_stage_board).l
 	jsr     (p2_load_stage_board).l
   jmp     (load_boards_return).l
+
+
+pushback_bugfix:
+player           REG A0
+push_state       REG A1
+pusher_board_ofs REG D1
+threshold        REG D2
+PUSHBACK_REQS  = $953D0 + SHIFT_91470
+	cmpi.w  #2,(push_state)
+	beq.b   .skip_pushback
+	move.w  $7C(player),D1
+	cmp.w   threshold,D1
+	blt.b   .skip_pushback
+
+	jmp     (try_pushback_return).l
+.skip_pushback:
+	jmp     (no_pushback_return).l
 
 
 P1_INCOMING_PUSH = -$5FDE
