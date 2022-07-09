@@ -81,37 +81,7 @@ no_pushback_return  = $953C8 + SHIFT_91470
 	ASSERTPC try_pushback_return
 
 
-
 ;; nerf plat stall
-;; per-frame push/back type handling
-	ORG $97C34 + SHIFT_91470
-	jmp     (p1_flare_dec_pusher).l
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-p1_flare_push_return = $97C4A + SHIFT_91470
-	ASSERTPC p1_flare_push_return
-
-	ORG $97D36 + SHIFT_91470
-	jmp     (p2_flare_dec_pusher).l
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-p2_flare_push_return = $97D4C + SHIFT_91470
-	ASSERTPC p2_flare_push_return
-
-
-;; flare activation also clears incoming push
 	ORG $959EC + SHIFT_A1416
 	jmp     (flare_item_set_push).l
 	nop
@@ -219,55 +189,22 @@ PUSHBACK_REQS  = $953D0 + SHIFT_91470
 	jmp     (no_pushback_return).l
 
 
-P1_INCOMING_PUSH = -$5FDE
-P1_PUSHER_OFFSET = -$EB4
-p1_flare_dec_pusher:
-; $40714C = p1_pusher_board_offset
-	move.w  P1_PUSHER_OFFSET(A5),D0
-	move.w  D0,-$EB8(A5)
-; incoming push = max(0, incoming push - 6)
-; 6 = flare push damage at < 60
-	asr.w   #4,D0 ; convert board ofs to line
-	move.w  P1_INCOMING_PUSH(A5),D1
-	add.w   D0,D1
-	subi.w  #6,D1
-	bpl.b   .nozero
-	clr.w   D1
-.nozero:
-	move.w  D1,P1_INCOMING_PUSH(A5)
-	jmp     (p1_flare_push_return).l
-
-P2_INCOMING_PUSH = -$5F36
-P2_PUSHER_OFFSET = -$EB2
-p2_flare_dec_pusher:
-; $40714E = p2_pusher_board_offset
-	move.w  P2_PUSHER_OFFSET(A5),D0
-	move.w  D0,-$EB6(A5)
-	asr.w   #4,D0 ; convert board ofs to line
-	move.w  P2_INCOMING_PUSH(A5),D1
-	add.w   D0,D1
-	subi.w  #6,D1
-	bpl.b   .nozero
-	clr.w   D1
-.nozero:
-	move.w  D1,P2_INCOMING_PUSH(A5)
-	jmp     (p2_flare_push_return).l
-
-
 
 flare_item_set_push:
 	; piece->player_state => A0
 	movea.l $54(A3),A0
-	
+
+	; piece->player side (index)
+	move.w  $24(A3),D1
 	; pusher ofs / 16 == row
-	move.w  $80(A0),D0
+	move.w  -$EB4(A5,D1),D0
 	asr.w   #4,D0
 	; add incoming push damage
 	add.w   $7E(A0),D0
 	; subtract 6 + 1 for pusher 1-index
-	subi.w  #7,D0
+	subi.w  #6,D0
 	
-	bge.b   .nozero
+	bpl.b   .nozero
 	clr.w   D0
 .nozero:
 	move.w  D0,$7E(A0)
