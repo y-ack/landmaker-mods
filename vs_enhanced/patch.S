@@ -263,7 +263,7 @@ flare_item_set_push:
 	move.w  $80(A0),D0
 	asr.w   #4,D0
 	; add incoming push damage
-	add.w   $7E,D0
+	add.w   $7E(A0),D0
 	; subtract 6 + 1 for pusher 1-index
 	subi.w  #7,D0
 	
