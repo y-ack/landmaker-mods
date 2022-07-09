@@ -112,10 +112,11 @@ p2_flare_push_return = $97D4C + SHIFT_91470
 
 
 ;; flare activation also clears incoming push
-	ORG $A9862 + SHIFT_A1416
+	ORG $959EC + SHIFT_A1416
 	jmp     (flare_item_set_push).l
 	nop
-flare_set_push_return = $A986A + SHIFT_A1416
+	nop
+flare_set_push_return = $959F6 + SHIFT_A1416
 	ASSERTPC flare_set_push_return
 
 
@@ -170,11 +171,11 @@ bonus_check:
 	tst.w   IS_PRACTICE(A5)
 	bne.b   .practice
 ; must skip if 2p vs context
-  tst.w   IS_2P_VS(A5)
-  bne.b   .no_bonus
+	tst.w   IS_2P_VS(A5)
+	bne.b   .no_bonus
 ; back to normal check
-  cmpi.w  #$a,STAGE(A5)
-  blt.b   .no_bonus
+	cmpi.w  #$a,STAGE(A5)
+	blt.b   .no_bonus
 	jmp     lab_bonus_screen
 .practice:
 	cmpi.w  #3,STAGE(A5)
@@ -198,7 +199,7 @@ load_boards:
 ; normal calls
 	jsr     (p1_load_stage_board).l
 	jsr     (p2_load_stage_board).l
-  jmp     (load_boards_return).l
+	jmp     (load_boards_return).l
 
 
 pushback_bugfix:
@@ -255,12 +256,19 @@ p2_flare_dec_pusher:
 
 
 flare_item_set_push:
-pushback_type	REG A0
-player_state	REG A1
-	move.w  #3,(pushback_type)
+	; piece->player_state => A0
+	movea.l $54(A3),A0
 	
-;	subi.w  #6,P2_INCOMING_PUSH(A5)
-;	bmi.b   .nozero
-;	clr.w   P2_INCOMING_PUSH(A5)
+	; pusher ofs / 16 == row
+	move.w  $80(A0),D0
+	asr.w   #4,D0
+	; add incoming push damage
+	add.w   $7E,D0
+	; subtract 6 + 1 for pusher 1-index
+	subi.w  #7,D0
+	
+	bge.b   .nozero
+	clr.w   D0
 .nozero:
+	move.w  D0,$7E(A0)
 	jmp     (flare_set_push_return).l
