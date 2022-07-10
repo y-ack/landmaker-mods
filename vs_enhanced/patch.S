@@ -82,11 +82,11 @@ no_pushback_return  = $953C8 + SHIFT_91470
 
 
 ;; nerf plat stall
-	ORG $959EC + SHIFT_A1416
+	ORG $959EC + SHIFT_91470
 	jmp     (flare_item_set_push).l
 	nop
 	nop
-flare_set_push_return = $959F6 + SHIFT_A1416
+flare_set_push_return = $959F6 + SHIFT_91470
 	ASSERTPC flare_set_push_return
 
 
