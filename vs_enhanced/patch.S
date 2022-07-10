@@ -197,7 +197,7 @@ flare_item_set_push:
 	; piece->player side (index)
 	move.w  $24(A3),D1
 	; pusher ofs / 16 == row
-	move.w  -$EB4(A5,D1),D0
+	move.w  -$EB4(A5,D1.w*2),D0
 	asr.w   #4,D0
 	; add incoming push damage
 	add.w   $7E(A0),D0
