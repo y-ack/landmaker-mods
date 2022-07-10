@@ -190,6 +190,10 @@ PUSHBACK_REQS  = $953D0 + SHIFT_91470
 
 
 
+;; flare: subtract 6 damage instead of clearing.
+;; we incorporate the pusher ofs
+;; because pusher has to reset
+;; to make space for new buildings
 flare_item_set_push:
 	; piece->player_state => A0
 	movea.l $54(A3),A0
@@ -201,7 +205,7 @@ flare_item_set_push:
 	asr.w   #4,D0
 	; add incoming push damage
 	add.w   $7E(A0),D0
-	; subtract 6 + 1 for pusher 1-index
+	; subtract 6
 	subi.w  #6,D0
 	
 	bpl.b   .nozero
