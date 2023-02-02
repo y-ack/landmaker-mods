@@ -16,7 +16,7 @@ make install
 ## usage / applying assembly patches
 **NOTE:** make sure original roms `landmakr.zip` and `landmakrj.zip` are in the `roms/` folder.
 
-run `make` in any patch subfolder 
+run `make` in any patch subfolder  
 patched files will be in `out/`
 
 additional make targets:
@@ -47,11 +47,11 @@ for example:
 	ORG $93BF4 + SHIFT_91470
 	ORG $1FFFFE + SHIFT_A1416
 ```
-for more information on the shift tables and their derivation, see: < wip >
+for more information on the shift tables and their derivation, see: https://qcs.shsbs.xyz/share/ywy/land-maker#shifts
 
 rom map: < wip >
 
 ## other
 https://github.com/y-ack/landmaker-color-mod
 
-y's land maker investigation home page: < wip >
+y's land maker investigation home page: https://qcs.shsbs.xyz/share/ywy/land-maker
