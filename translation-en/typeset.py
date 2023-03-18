@@ -23,6 +23,9 @@ class Glyph:
 
 
 class Canvas:
+    palettedata = [0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0,
+                   80,40,128, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 248,248,248]
+
     def __init__(self, width=288, height=48):
         self.w = width
         self.h = height
@@ -40,25 +43,25 @@ class Canvas:
             for c in s:
                 g = font[c]
                 width += g.kern.get(last_char, 0)
-                width += g.w
+                width += g.w + 1 # TODO +1 hack before width data
         x = (self.w - width) // 2 
         for c in s:
             g = font[c]
             x += g.kern.get(last_char, 0)
             self.draw_glyph(g, x, y)
-            x += g.w
+            x += g.w + 1 # TODO
         return self
 
     def draw_multiline(self, s: str, font: dict[str, Glyph], centered = True):
         lines = s.split("\n")
         if len(lines) == 1:
-            y_ofs = self.h // 2 - font[" "].h
+            y_ofs = self.h // 2 - font[" "].h // 2
             self.draw_string(lines[0], y_ofs, font, centered)
         elif len(lines) == 2:
             # TODO: what are the correct line spacing values??
-            y_ofs = self.h // 3 + 0 - font[" "].h
+            y_ofs = 6 # self.h // 3 + 0 - font[" "].h
             self.draw_string(lines[0], y_ofs, font, centered)
-            y_ofs += self.h // 3 + 0
+            y_ofs += 14 + 4 # self.h // 3 + 0
             self.draw_string(lines[1], y_ofs, font, centered)
         return self
             
@@ -67,27 +70,44 @@ class Canvas:
         # TODO: probably a better way to do this. at least make it a function
         out = np.zeros((self.h, self.w), dtype=np.uint8)
         shape = np.roll(self.canvas, -1, axis=0) # -1,0
-        np.copyto(out, shape, 'no', where=shape != 0)
-        shape = np.roll(self.canvas, -1, axis=1) # -1,-1
-        np.copyto(out, shape, 'no', where=shape != 0)
-        shape = np.roll(self.canvas, +1, axis=0) # 0,-1
-        np.copyto(out, shape, 'no', where=shape != 0)
-        shape = np.roll(self.canvas, +1, axis=0) # 1,-1
-        np.copyto(out, shape, 'no', where=shape != 0)
-        shape = np.roll(self.canvas, +1, axis=1) # 1,0
-        np.copyto(out, shape, 'no', where=shape != 0)
-        shape = np.roll(self.canvas, +1, axis=0) # 1,1
-        np.copyto(out, shape, 'no', where=shape != 0)
-        shape = np.roll(self.canvas, -1, axis=0) # 0,1
-        np.copyto(out, shape, 'no', where=shape != 0)
-        shape = np.roll(self.canvas, -1, axis=0) # -1,1
-        np.copyto(out, shape, 'no', where=shape != 0)
+        out[shape != 0] = shape[shape != 0]
+        shape = np.roll(shape, -1, axis=1) # -1,-1
+        out[shape != 0] = shape[shape != 0]
+        shape = np.roll(shape, +1, axis=0) # 0,-1
+        out[shape != 0] = shape[shape != 0]
+        shape = np.roll(shape, +1, axis=0) # 1,-1
+        out[shape != 0] = shape[shape != 0]
+        shape = np.roll(shape, +1, axis=1) # 1,0
+        out[shape != 0] = shape[shape != 0]
+        shape = np.roll(shape, +1, axis=1) # 1,1
+        out[shape != 0] = shape[shape != 0]
+        shape = np.roll(shape, -1, axis=0) # 0,1
+        out[shape != 0] = shape[shape != 0]
+        shape = np.roll(shape, -1, axis=0) # -1,1
+        out[shape != 0] = shape[shape != 0]
         out = np.multiply(out, outline)
 
         shape = self.canvas
         shape = np.multiply(shape, fill)
         np.copyto(out, shape, 'no', where=shape != 0)
         return out
+
+    def draw_outline(self, fill: np.uint8 = 15, outline: np.uint8 = 8):
+        self.canvas = self.outlined(fill, outline)
+        return self
+
+    def save_file(self, outfile):
+        np.save(outfile, self.canvas, allow_pickle = False)
+
+    def save_png(self, outfile, palette = palettedata):
+            im = Image.fromarray(self.canvas, mode="P")
+            #im = im.transpose(method=2)
+            im.putpalette(palette)
+            im.save(outfile)        
+
+    def data(self):
+        return self.canvas
+
         
 def load_font(filename=FONT_FILE, glyphs_dict={}):
     with open(filename, newline='') as fontfile:
@@ -108,20 +128,13 @@ def process_wmes():
         np.set_printoptions(threshold=np.inf)
         for row in reader:
             print(row[ID_K], row[TEXT_K])
-            array = Canvas(288,48).draw_multiline(row[TEXT_K], glyphs).outlined()
-
-            im = Image.fromarray(array, mode="P")
-            #im = im.transpose(method=2)
-            im.putpalette(palettedata)
-            im.save(f'{row[ID_K]}.png')
+            c = Canvas(288,48).draw_multiline(row[TEXT_K], glyphs).draw_outline()
+            c.save_png(f'{row[ID_K]}.png')
+            # c.save_file(f'{row[ID_K]}')
 
 
+# TODO: eliminate global glyph map
 glyphs = {}
-palettedata = [0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0,
-               80,40,128, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 248,248,248]
 if __name__ == '__main__':
-    
-    load_font(FONT_FILE, glyphs)
-
-    
+    load_font(FONT_FILE, glyphs)    
     process_wmes() 
