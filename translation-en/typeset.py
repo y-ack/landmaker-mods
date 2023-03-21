@@ -10,6 +10,9 @@ TEXT_K = 'ENGLISH'
 
 FONT_FILE = 'font'
 
+OUT_DIR = 'intermediate/wmes_array'
+PNG_OUT_DIR = 'intermediate/wmes_png'
+
 class Glyph:
     def __init__(self, glyphbitmap, width=0, hidth=14, kern: dict[str,int]={}):
         self.glyph = glyphbitmap
@@ -30,12 +33,15 @@ class Canvas:
         self.w = width
         self.h = height
         self.canvas = np.zeros((height, width), dtype=np.uint8)
+        self.line_ofs = []
 
     def draw_glyph(self, g: Glyph, x, y):
         self.canvas[y:(y+g.h), x:(x+g.w)] = g.glyph
         return self
 
     def draw_string(self, s: str, y: int, font: dict[str, Glyph], centered = True):
+        # record y offsets for tile generation
+        self.line_ofs.append(y)
         last_char = None
         width = 0
         if centered:
@@ -103,8 +109,11 @@ class Canvas:
             im = Image.fromarray(self.canvas, mode="P")
             #im = im.transpose(method=2)
             im.putpalette(palette)
-            im.save(outfile)        
+            im.save(outfile)
 
+    def get_tile(self, x, y, w, h):
+        return self.canvas[y:(y+h), x:(x+w)]
+            
     def data(self):
         return self.canvas
 
@@ -122,19 +131,23 @@ def load_font(filename=FONT_FILE, glyphs_dict={}):
             glyphs_dict[chr(i+0x21)] = g
 
 
-def process_wmes():
-    with open(WMES_CSV, newline='') as csvfile:
+def get_wmes(wmes_csv=WMES_CSV):
+    """wmes bitmap generator"""
+    with open(wmes_csv, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         np.set_printoptions(threshold=np.inf)
         for row in reader:
             print(row[ID_K], row[TEXT_K])
             c = Canvas(288,48).draw_multiline(row[TEXT_K], glyphs).draw_outline()
-            c.save_png(f'{row[ID_K]}.png')
-            # c.save_file(f'{row[ID_K]}')
+            yield c
 
+def debug_save_wmes():
+    for c in get_wmes():
+        c.save_png(f'{PNG_OUT_DIR}/{row[ID_K]}.png')
+        c.save_file(f'{OUT_DIR}/{row[ID_K]}')
 
 # TODO: eliminate global glyph map
 glyphs = {}
+load_font(FONT_FILE, glyphs)
 if __name__ == '__main__':
-    load_font(FONT_FILE, glyphs)    
-    process_wmes() 
+    debug_save_wmes()
