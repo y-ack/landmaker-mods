@@ -3,3 +3,5 @@ roms/*
 *.bin
 *.o
 *.p
+__pycache__
+MSMINCHO.TTC

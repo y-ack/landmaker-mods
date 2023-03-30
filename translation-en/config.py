@@ -28,7 +28,7 @@ FG_IDX = 15
 BG_IDX = 8
 
 # CSV path and keys to use
-#"ID","JAPANESE","PS EN","ENGLISH","Y COMMENTS","MOJILOVE COMMENTS"
+#"ID","JAPANESE","PS EN","ENGLISH"
 WMES_CSV = 'landmakr-script - WMES.csv'
 ID_K = 'ID'
 TEXT_K = 'ENGLISH'
