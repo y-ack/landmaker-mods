@@ -1,10 +1,8 @@
+import config as cfg
 import typeset
 import numpy as np
 
 chips = {}
-
-SCR_SAFE_TILES = [(0x168, 0x293), (0x294, 0x3b0), (0x789e, 0xffff)]
-OBJ_SAFE_TILES = [(0x6d60, 0x7fff)]
 
 class TileIdIterator:
     """iterator over known safe tile id ranges"""
@@ -41,15 +39,14 @@ class TileChip:
 
 def process_bitmaps():
     # WMES
-    TILE_W = 16
-    obj_ids = TileIdIterator(OBJ_SAFE_TILES)
+    obj_ids = TileIdIterator(cfg.OBJ_SAFE_TILES)
     tile_ids = {}
-    tile_ids[np.zeros((16,TILE_W), dtype=np.uint8).tostring()] = 0
+    tile_ids[np.zeros((16, cfg.TILE_W), dtype=np.uint8).tostring()] = 0
     for cnv in typeset.get_wmes():
         # skip rows, pretend generating sprite strips?
         for y in cnv.line_ofs:
-            for x in range(0, cnv.w, TILE_W):
-                tile = cnv.get_tile(x, y, TILE_W, 16)
+            for x in range(0, cnv.w, cfg.TILE_W):
+                tile = cnv.get_tile(x, y, cfg.TILE_W, 16)
                 #print(tile)
                 if tile.tobytes() not in tile_ids:
                     tile_ids[tile.tobytes()] = next(obj_ids)

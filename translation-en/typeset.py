@@ -1,34 +1,35 @@
 #!/usr/bin/python3
+import config as cfg
 import csv
+import json
 from PIL import Image,ImagePalette
 import numpy as np
 
-#"ID","JAPANESE","PS EN","ENGLISH"
-WMES_CSV = 'landmakr-script - WMES.csv'
-ID_K = 'ID'
-TEXT_K = 'ENGLISH'
-
-FONT_FILE = 'font'
-
-OUT_DIR = 'intermediate/wmes_array'
-PNG_OUT_DIR = 'intermediate/wmes_png'
-
 class Glyph:
-    def __init__(self, glyphbitmap, width=0, hidth=14, kern: dict[str,int]={}):
+    def __init__(self, glyphbitmap, width=0, hidth=14, lsb=0, advance=0, kern: dict[str,int]={}):
         self.glyph = glyphbitmap
         self.w = width
         self.h = hidth
+        self.lsb = lsb
+        self.advance = advance
         self.kern = kern
-        
+
     def from_col_bits(self, bitmap: list[list[int]]):
         #self.glyph = np.unpackbits(bitmap,axis=1,count=self.h,bitorder='little')
         self.glyph = np.rot90(np.unpackbits(bitmap,axis=1,count=self.h,bitorder='little'))
 
+        
+def load_font(filename=cfg.FONT_FILE, glyphs_dict={}):
+    with open(filename, newline='') as fontfile:
+        glyphdata = json.load(fontfile)
+    for gd in glyphdata.values():
+        g = Glyph(None, len(gd['cols']), 14, gd['lsb'], gd['advance'], gd['kern'])
+        columns = [[int(i) & 0xff,int(i)>>8] for i in gd['cols']]
+        g.from_col_bits(np.array(columns, dtype=np.uint8))
+        glyphs_dict[gd['char']] = g
+
 
 class Canvas:
-    palettedata = [0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0,
-                   80,40,128, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 248,248,248]
-
     def __init__(self, width=288, height=48):
         self.w = width
         self.h = height
@@ -48,14 +49,21 @@ class Canvas:
             # do a width calculation pass and avoid copying arrays later
             for c in s:
                 g = font[c]
+                width += g.lsb
                 width += g.kern.get(last_char, 0)
-                width += g.w + 1 # TODO +1 hack before width data
+                width += g.advance
+                width += 1
+                last_char = c
+        last_char = None
         x = (self.w - width) // 2 
         for c in s:
             g = font[c]
+            x += g.lsb
             x += g.kern.get(last_char, 0)
             self.draw_glyph(g, x, y)
-            x += g.w + 1 # TODO
+            x += g.advance
+            x += 1
+            last_char = c
         return self
 
     def draw_multiline(self, s: str, font: dict[str, Glyph], centered = True):
@@ -70,27 +78,16 @@ class Canvas:
             y_ofs += 14 + 4 # self.h // 3 + 0
             self.draw_string(lines[1], y_ofs, font, centered)
         return self
-            
 
-    def outlined(self, fill: np.uint8 = 15, outline: np.uint8 = 8):
-        # TODO: probably a better way to do this. at least make it a function
+    def outlined(self, fill: np.uint8 = cfg.FG_IDX, outline: np.uint8 = cfg.BG_IDX):
         out = np.zeros((self.h, self.w), dtype=np.uint8)
-        shape = np.roll(self.canvas, -1, axis=0) # -1,0
+        # draw the outline shape, starting at -1,0
+        shape = np.roll(self.canvas, -1, axis=0)
         out[shape != 0] = shape[shape != 0]
-        shape = np.roll(shape, -1, axis=1) # -1,-1
-        out[shape != 0] = shape[shape != 0]
-        shape = np.roll(shape, +1, axis=0) # 0,-1
-        out[shape != 0] = shape[shape != 0]
-        shape = np.roll(shape, +1, axis=0) # 1,-1
-        out[shape != 0] = shape[shape != 0]
-        shape = np.roll(shape, +1, axis=1) # 1,0
-        out[shape != 0] = shape[shape != 0]
-        shape = np.roll(shape, +1, axis=1) # 1,1
-        out[shape != 0] = shape[shape != 0]
-        shape = np.roll(shape, -1, axis=0) # 0,1
-        out[shape != 0] = shape[shape != 0]
-        shape = np.roll(shape, -1, axis=0) # -1,1
-        out[shape != 0] = shape[shape != 0]
+        
+        for d,ax in ((-1,1), (+1,0), (+1,0), (+1,1), (+1,1), (-1,0), (-1,0)):
+            shape = np.roll(shape, d, axis=ax)
+            out[shape != 0] = shape[shape != 0]
         out = np.multiply(out, outline)
 
         shape = self.canvas
@@ -98,14 +95,14 @@ class Canvas:
         np.copyto(out, shape, 'no', where=shape != 0)
         return out
 
-    def draw_outline(self, fill: np.uint8 = 15, outline: np.uint8 = 8):
+    def draw_outline(self, fill: np.uint8 = cfg.FG_IDX, outline: np.uint8 = cfg.BG_IDX):
         self.canvas = self.outlined(fill, outline)
         return self
 
     def save_file(self, outfile):
         np.save(outfile, self.canvas, allow_pickle = False)
 
-    def save_png(self, outfile, palette = palettedata):
+    def save_png(self, outfile, palette = cfg.PALETTE):
             im = Image.fromarray(self.canvas, mode="P")
             #im = im.transpose(method=2)
             im.putpalette(palette)
@@ -117,37 +114,24 @@ class Canvas:
     def data(self):
         return self.canvas
 
-        
-def load_font(filename=FONT_FILE, glyphs_dict={}):
-    with open(filename, newline='') as fontfile:
-        # FIXME: pending actual space glyph in font data
-        glyphs_dict[" "] = Glyph(np.zeros((14,3), dtype=np.uint8), 3, 14)
 
-        # FIXME: new data format should specify char
-        for i, gd in enumerate(fontfile):
-            columns = [[int(i) & 0xff,int(i)>>8] for i in gd.split(",")]
-            g = Glyph(None, len(columns), 14)
-            g.from_col_bits(np.array(columns, dtype=np.uint8))
-            glyphs_dict[chr(i+0x21)] = g
-
-
-def get_wmes(wmes_csv=WMES_CSV):
+def get_wmes(wmes_csv=cfg.WMES_CSV):
     """wmes bitmap generator"""
     with open(wmes_csv, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         np.set_printoptions(threshold=np.inf)
         for row in reader:
-            print(row[ID_K], row[TEXT_K])
-            c = Canvas(288,48).draw_multiline(row[TEXT_K], glyphs).draw_outline()
-            yield c
+            print(row[cfg.ID_K], row[cfg.TEXT_K])
+            c = Canvas(288,48).draw_multiline(row[cfg.TEXT_K], glyphs).draw_outline()
+            yield c, row[cfg.ID_K]
 
 def debug_save_wmes():
-    for c in get_wmes():
-        c.save_png(f'{PNG_OUT_DIR}/{row[ID_K]}.png')
-        c.save_file(f'{OUT_DIR}/{row[ID_K]}')
+    for c, mes_id in get_wmes():
+        c.save_png(f'{cfg.PNG_OUT}/{mes_id}.png', cfg.PALETTE)
+        c.save_file(f'{cfg.ARRAY_OUT}/{mes_id}')
 
 # TODO: eliminate global glyph map
 glyphs = {}
-load_font(FONT_FILE, glyphs)
+load_font(cfg.FONT_FILE, glyphs)
 if __name__ == '__main__':
     debug_save_wmes()
