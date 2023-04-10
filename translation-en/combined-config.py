@@ -15,7 +15,8 @@ PNG_OUT = use_path('intermediate/png')
 
 # Important settings that vary by game
 # tilemap rom tiles we want to overwrite
-SCR_SAFE_TILES = [(0x1877, 0x2311), (0x64d6, 0x76eb), (0x789e, 0x7fff)]
+#SCR_SAFE_TILES = [(0x168, 0x293), (0x294, 0x359), (0x35b, 0x3b0), (0x789e, 0x7fff)]
+SCR_SAFE_TILES = [(0x789e, 0x7fff)]
 # sprite rom tiles we want to overwrite
 OBJ_SAFE_TILES = [(0x6d60, 0x7fff)]
 

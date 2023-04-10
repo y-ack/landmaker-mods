@@ -15,15 +15,16 @@ class Glyph:
         self.kern = kern
 
     def from_col_bits(self, bitmap: list[list[int]]):
-        #self.glyph = np.unpackbits(bitmap,axis=1,count=self.h,bitorder='little')
         self.glyph = np.rot90(np.unpackbits(bitmap,axis=1,count=self.h,bitorder='little'))
 
         
 def load_font(filename=cfg.FONT_FILE, glyphs_dict={}):
     with open(filename, newline='') as fontfile:
         glyphdata = json.load(fontfile)
+    # populate the glyph map with pre-processed glyph bitmaps
     for gd in glyphdata.values():
         g = Glyph(None, len(gd['cols']), 14, gd['lsb'], gd['advance'], gd['kern'])
+        # coerce column data into uint8 lists suitable for numpy.unpackbits
         columns = [[int(i) & 0xff,int(i)>>8] for i in gd['cols']]
         g.from_col_bits(np.array(columns, dtype=np.uint8))
         glyphs_dict[gd['char']] = g
@@ -114,6 +115,15 @@ class Canvas:
     def data(self):
         return self.canvas
 
+def get_mes(mes_csv):
+    """wmes bitmap generator"""
+    with open(mes_csv, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        np.set_printoptions(threshold=np.inf)
+        for row in reader:
+            print(row[cfg.ID_K], row[cfg.TEXT_K])
+            c = Canvas(288,48).draw_multiline(row[cfg.TEXT_K], glyphs).draw_outline()
+            yield c, row[cfg.ID_K]
 
 def get_wmes(wmes_csv=cfg.WMES_CSV):
     """wmes bitmap generator"""
@@ -125,6 +135,21 @@ def get_wmes(wmes_csv=cfg.WMES_CSV):
             c = Canvas(288,48).draw_multiline(row[cfg.TEXT_K], glyphs).draw_outline()
             yield c, row[cfg.ID_K]
 
+def get_emes(emes_csv=cfg.EMES_CSV):
+    """wmes bitmap generator"""
+    with open(emes_csv, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        np.set_printoptions(threshold=np.inf)
+        for row in reader:
+            print(row[cfg.ID_K], row[cfg.TEXT_K])
+            c = Canvas(288,48).draw_multiline(row[cfg.TEXT_K], glyphs).draw_outline()
+            yield c, row[cfg.ID_K]
+
+def debug_save_mes(get_mes_fn):
+    for c, mes_id in get_mes_fn:
+        c.save_png(f'{cfg.PNG_OUT}/{mes_id}.png', cfg.PALETTE)
+        c.save_file(f'{cfg.ARRAY_OUT}/{mes_id}')
+
 def debug_save_wmes():
     for c, mes_id in get_wmes():
         c.save_png(f'{cfg.PNG_OUT}/{mes_id}.png', cfg.PALETTE)
@@ -134,4 +159,5 @@ def debug_save_wmes():
 glyphs = {}
 load_font(cfg.FONT_FILE, glyphs)
 if __name__ == '__main__':
-    debug_save_wmes()
+    debug_save_mes(get_wmes())
+    debug_save_mes(get_emes())

@@ -55,7 +55,7 @@ $(LANDMAKRJ_OUT_PRG_ROMFILES): $(OUTDIR)/landmakrj/ landmakrj_program_patched.bi
 $(LANDMAKR_OUT_OBJ_LO_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched obj_lo_gfx_patched.bin
 	$(DEINTERLEAVE) -i obj_lo_gfx_patched.bin -o $(LANDMAKR_OUT_OBJ_LO_ROMFILES)
 $(LANDMAKR_OUT_SCR_LO_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched scr_lo_gfx_patched.bin
-	$(DEINTERLEAVE) -w 2 -i obj_lo_gfx_patched.bin -o $(LANDMAKR_OUT_SCR_LO_ROMFILES)
+	$(DEINTERLEAVE) -w 2 -i scr_lo_gfx_patched.bin -o $(LANDMAKR_OUT_SCR_LO_ROMFILES)
 $(LANDMAKR_OUT_OBJ_HI_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched obj_hi_gfx_patched.bin 
 	cp obj_hi_gfx_patched.bin $(LANDMAKR_OUT_OBJ_HI_ROMFILES)
 $(LANDMAKR_OUT_SCR_HI_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched scr_hi_gfx_patched.bin 
@@ -90,7 +90,8 @@ scr_lo_gfx.bin: $(ROMDIR)/landmakr/
 
 # python goes here !
 gfx_patched: obj_lo_gfx.bin obj_hi_gfx.bin scr_lo_gfx.bin scr_hi_gfx.bin
-	python3 generate_tiles.py
+	python3 main.py
+#	python3 copy_kariwaku_tiles.py
 
 $(OUTDIR)/%/: $(ROMDIR)/%
 	mkdir -p $@

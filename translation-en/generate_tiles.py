@@ -1,6 +1,9 @@
 import config as cfg
+import gfxrom
 import typeset
+import table_writer
 import numpy as np
+import os
 
 chips = {}
 
@@ -25,37 +28,88 @@ class TileIdIterator:
     def __iter__(self):
         return self
    
+def process_bitmaps(canvas_gen, safe_tiles: TileIdIterator, is_scr, full = True):
+    """process 2d numpy array bitmaps provided by the generator `canvas_gen`
+    into 16x16 tiles, assigning to tile ids as provided by `safe_tiles`.
+    if `full` (optional) is False, use the line offsets on the canvas to
+    generate optimized strips. if `full` is True, the rows start at y=0 and
+    cover the full canvas."""
+    lo, hi = (cfg.SCR_LO_OUT,cfg.SCR_HI_OUT) if is_scr else (cfg.OBJ_LO_OUT,cfg.OBJ_HI_OUT) 
+    with gfxrom.GfxRomWriter(lo, hi, is_scr=is_scr) as rom:
+        # basic tile id map setup
+        tile_ids = {}
+        tile_ids[np.zeros((cfg.TILE_H, cfg.TILE_W), dtype=np.uint8).tostring()] = 0
 
-# useless?
-class TileChip:
-    # 16x16
-    def __init__(self, bitmap: np.ndarray):
-        """bitmap must be dtype=uint8"""
-        self.bitmap = bitmap
-        
-    def is_empty(self):
-        return np.amax(this.bitmap, initial = 0) == 0
+        # setup for the indirection tables
+        # TODO: where should this name be coming from??
+        mestbl = table_writer.MesInfo(r"_BL_(.MES[A-Z])01")
+
+        # handle all canvases
+        for cnv, bl_id in canvas_gen:
+            # skip rows, pretend generating sprite strips?
+            rows = range(0, cnv.h, cfg.TILE_H) if full else cnv.line_ofs
+            cols = range(0, cnv.w, cfg.TILE_W)
+            # SCR block defs are column-major, affects tile processing order
+            
+            # what kind of block defs? split or whole?
+            # THIS IS   ALL WRONG   ASSUMES OBJ/SCR THINGS
+            bl = []
+            if full:
+                bl.append(table_writer.BlockDef(bl_id + cfg.BLDEF_SUFFIX +
+                                                str(0), len(rows), len(cols), is_scr))
+                mestbl.new_message(bl_id, 1)
+            else:
+                for y in rows:
+                    bl.append(table_writer.BlockDef(bl_id + cfg.BLDEF_SUFFIX +
+                                                    str(y), 0, len(cols) - 1, is_scr))
+                mestbl.new_message(bl_id, len(rows))
+
+            if not is_scr: rows,cols = cols,rows
+            for y in rows:
+                bl[0].new_line()
+                mestbl.add_strip(bl_id + cfg.BLDEF_SUFFIX + str(y), y)
+                
+                for x in cols:
+                    if is_scr:
+                        tile = cnv.get_tile(x, y, cfg.TILE_W, cfg.TILE_H)
+                    else:
+                        tile = cnv.get_tile(y, x, cfg.TILE_W, cfg.TILE_H)
+
+                    if tile.tobytes() not in tile_ids:
+                        idx = tile_ids[tile.tobytes()] = next(safe_tiles)
+                        # new tile to write!
+                        rom.write_tile(idx, tile)
+
+                    bl[0].write_chip(tile_ids[tile.tobytes()])
+                # pop the block def if separate tables per line
+                if not full:
+                    bl[0].finalize()
+                    bl[0].save("tables.S")
+                    bl = bl[1:]
+            if full:
+                bl[0].finalize()
+                bl[0].save("tables.S")
+
+    # ALL block defs should be written at this point.
+    # we now write the accumulated strip data table and pointer tables
+    #mestbl.save("tables.S")
+    print(f"chips used: {safe_tiles.total_used}")
 
 
-def process_bitmaps():
-    # WMES
-    obj_ids = TileIdIterator(cfg.OBJ_SAFE_TILES)
-    tile_ids = {}
-    tile_ids[np.zeros((16, cfg.TILE_W), dtype=np.uint8).tostring()] = 0
-    for cnv in typeset.get_wmes():
-        # skip rows, pretend generating sprite strips?
-        for y in cnv.line_ofs:
-            for x in range(0, cnv.w, cfg.TILE_W):
-                tile = cnv.get_tile(x, y, cfg.TILE_W, 16)
-                #print(tile)
-                if tile.tobytes() not in tile_ids:
-                    tile_ids[tile.tobytes()] = next(obj_ids)
-
-                print(f"{tile_ids[tile.tobytes()]:X},", end="")
-            print()
-    print(f"chips used: {obj_ids.total_used}")
 
 # known tile chips
 chips = {}
 if __name__ == '__main__':
-    process_bitmaps()
+    os.system('rm tables.S')
+    os.system(f'cp {cfg.SCR_HI} {cfg.SCR_HI_OUT}')
+    os.system(f'cp {cfg.SCR_LO} {cfg.SCR_LO_OUT}')    
+    os.system(f'cp {cfg.OBJ_HI} {cfg.OBJ_HI_OUT}')
+    os.system(f'cp {cfg.OBJ_LO} {cfg.OBJ_LO_OUT}')
+    process_bitmaps(typeset.get_wmes(),
+                    TileIdIterator(cfg.OBJ_SAFE_TILES),
+                    is_scr=False,
+                    full=False)
+    process_bitmaps(typeset.get_emes(),
+                    TileIdIterator(cfg.SCR_SAFE_TILES),
+                    is_scr=True,
+                    full=True)
