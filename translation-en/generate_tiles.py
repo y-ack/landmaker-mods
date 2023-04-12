@@ -21,9 +21,10 @@ class TileIdIterator:
             if self.cur_block > len(self.safe_blocks):
                 raise IndexError(f"out of safe tile ids (last: {self.safe_blocks[self.cur_block-1]})")
             self.cur_id = self.safe_blocks[self.cur_block][0]
+        n = self.cur_id
         self.cur_id += 1
         self.total_used += 1
-        return self.cur_id
+        return n
     
     def __iter__(self):
         return self
@@ -34,7 +35,7 @@ def process_bitmaps(canvas_gen, safe_tiles: TileIdIterator, is_scr, full = True)
     if `full` (optional) is False, use the line offsets on the canvas to
     generate optimized strips. if `full` is True, the rows start at y=0 and
     cover the full canvas."""
-    lo, hi = (cfg.SCR_LO_OUT,cfg.SCR_HI_OUT) if is_scr else (cfg.OBJ_LO_OUT,cfg.OBJ_HI_OUT) 
+    lo, hi = (cfg.SCR_LO_OUT,cfg.SCR_HI_OUT) if is_scr else (cfg.OBJ_LO_OUT,cfg.OBJ_HI_OUT)
     with gfxrom.GfxRomWriter(lo, hi, is_scr=is_scr) as rom:
         # basic tile id map setup
         tile_ids = {}
@@ -42,32 +43,35 @@ def process_bitmaps(canvas_gen, safe_tiles: TileIdIterator, is_scr, full = True)
 
         # setup for the indirection tables
         # TODO: where should this name be coming from??
-        mestbl = table_writer.MesInfo(r"_BL_(.MES[A-Z])01")
+        #mestbl = table_writer.MesInfo(r"_BL_(.MES[A-Z])01")
 
         # handle all canvases
         for cnv, bl_id in canvas_gen:
+            table_file = "tables-wmes.s" if ("WMES" in bl_id) else "tables-emes.s"
             # skip rows, pretend generating sprite strips?
             rows = range(0, cnv.h, cfg.TILE_H) if full else cnv.line_ofs
             cols = range(0, cnv.w, cfg.TILE_W)
             # SCR block defs are column-major, affects tile processing order
             
             # what kind of block defs? split or whole?
-            # THIS IS   ALL WRONG   ASSUMES OBJ/SCR THINGS
+            # TODO: THIS IS   BAD   ASSUMES OBJ/SCR THINGS
             bl = []
             if full:
                 bl.append(table_writer.BlockDef(bl_id + cfg.BLDEF_SUFFIX +
-                                                str(0), len(rows), len(cols), is_scr))
-                mestbl.new_message(bl_id, 1)
+                                                str(0), len(rows), len(cols),
+                                                is_scr))
+                #mestbl.new_message(bl_id, 1)
             else:
                 for y in rows:
                     bl.append(table_writer.BlockDef(bl_id + cfg.BLDEF_SUFFIX +
-                                                    str(y), 0, len(cols) - 1, is_scr))
-                mestbl.new_message(bl_id, len(rows))
+                                                    str(y), 0, len(cols) - 1,
+                                                    is_scr))
+                #mestbl.new_message(bl_id, len(rows))
 
             if not is_scr: rows,cols = cols,rows
             for y in rows:
                 bl[0].new_line()
-                mestbl.add_strip(bl_id + cfg.BLDEF_SUFFIX + str(y), y)
+                #mestbl.add_strip(bl_id + cfg.BLDEF_SUFFIX + str(y), y)
                 
                 for x in cols:
                     if is_scr:
@@ -84,11 +88,11 @@ def process_bitmaps(canvas_gen, safe_tiles: TileIdIterator, is_scr, full = True)
                 # pop the block def if separate tables per line
                 if not full:
                     bl[0].finalize()
-                    bl[0].save("tables.S")
+                    bl[0].save(table_file)
                     bl = bl[1:]
             if full:
                 bl[0].finalize()
-                bl[0].save("tables.S")
+                bl[0].save(table_file)
 
     # ALL block defs should be written at this point.
     # we now write the accumulated strip data table and pointer tables

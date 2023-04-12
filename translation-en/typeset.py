@@ -38,13 +38,14 @@ class Canvas:
         self.line_ofs = []
 
     def draw_glyph(self, g: Glyph, x, y):
-        self.canvas[y:(y+g.h), x:(x+g.w)] = g.glyph
+        self.canvas[y:(y+g.h), x:(x+g.w)][g.glyph != 0] = g.glyph[g.glyph != 0]
         return self
 
     def draw_string(self, s: str, y: int, font: dict[str, Glyph], centered = True):
         # record y offsets for tile generation
         self.line_ofs.append(y)
         last_char = None
+        g = None
         width = 0
         if centered:
             # do a width calculation pass and avoid copying arrays later
@@ -55,6 +56,10 @@ class Canvas:
                 width += g.advance
                 width += 1
                 last_char = c
+            if g:
+                # adjust for extra whitespace at end of line
+                width -= g.advance - g.glyph.shape[1]
+
         last_char = None
         x = (self.w - width) // 2 
         for c in s:

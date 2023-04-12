@@ -10,15 +10,15 @@ OUTDIR = out
 IPSDIR = ips
 SRC = patch.S
 AS = asl
-ASFLAGS=-i . -i .. -n -U -q -l +t 70 -r 1
+ASFLAGS=-i . -i .. -n -U -q +t 70 -r 1
 P2BIN = p2bin
 ZIP = zip
 IPS = uips c
 INTERLEAVE = ../util/interleave.rb
 DEINTERLEAVE = ../util/deinterleave.rb
-TARGETS = landmakr landmakrj gfx_patched
+TARGETS = landmakr
 
-.PHONY: landmakr landmakrj ips landmakr_ips landmakrj_ips gfx_patched gfx_out
+.PHONY: landmakr landmakrj ips landmakr_ips landmakrj_ips gfx_patched scr_lo_out obj_lo_out
 .PRECIOUS: %_program_patched.bin
 
 all: $(TARGETS)
@@ -40,7 +40,7 @@ LANDMAKRJ_OUT_ROMFILES = $(LANDMAKRJ_OUT_PRG_ROMFILES)
 LANDMAKR_OUT_ROMFILES = $(LANDMAKR_OUT_PRG_ROMFILES) $(LANDMAKR_OUT_GFX_ROMFILES)
 LANDMAKRJ_OUT_IPSFILES = $(LANDMAKRJ_OUT_PRG_IPSFILES)
 LANDMAKR_OUT_IPSFILES = $(LANDMAKR_OUT_PRG_IPSFILES) $(LANDMAKR_OUT_GFX_IPSFILES)
-landmakr: $(LANDMAKR_OUT_ROMFILES)
+landmakr: $(LANDMAKR_OUT_ROMFILES) obj_lo_out scr_lo_out
 landmakrj: $(LANDMAKRJ_OUT_ROMFILES)
 ips: landmakr_ips landmakrj_ips
 
@@ -52,9 +52,9 @@ $(LANDMAKR_OUT_PRG_ROMFILES): $(OUTDIR)/landmakr/ landmakr_program_patched.bin
 $(LANDMAKRJ_OUT_PRG_ROMFILES): $(OUTDIR)/landmakrj/ landmakrj_program_patched.bin
 	$(DEINTERLEAVE) -i landmakrj_program_patched.bin -o $(LANDMAKRJ_OUT_PRG_ROMFILES)
 
-$(LANDMAKR_OUT_OBJ_LO_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched obj_lo_gfx_patched.bin
+obj_lo_out: $(OUTDIR)/landmakr/ gfx_patched obj_lo_gfx_patched.bin
 	$(DEINTERLEAVE) -i obj_lo_gfx_patched.bin -o $(LANDMAKR_OUT_OBJ_LO_ROMFILES)
-$(LANDMAKR_OUT_SCR_LO_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched scr_lo_gfx_patched.bin
+scr_lo_out: $(OUTDIR)/landmakr/ gfx_patched scr_lo_gfx_patched.bin
 	$(DEINTERLEAVE) -w 2 -i scr_lo_gfx_patched.bin -o $(LANDMAKR_OUT_SCR_LO_ROMFILES)
 $(LANDMAKR_OUT_OBJ_HI_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched obj_hi_gfx_patched.bin 
 	cp obj_hi_gfx_patched.bin $(LANDMAKR_OUT_OBJ_HI_ROMFILES)
@@ -82,7 +82,7 @@ scr_lo_gfx.bin: $(ROMDIR)/landmakr/
 %_hi_gfx.bin: $(ROMDIR)/landmakr/
 	$(INTERLEAVE) -i $(addprefix $<,$(landmakr_$*_hi_romfiles)) -o $@
 
-%_program_patched.o: %_program.bin $(SRC)
+%_program_patched.o: gfx_patched %_program.bin $(SRC)
 	$(AS) $(SRC) -D $* $(ASFLAGS) -o $@
 
 %_program_patched.bin: %_program_patched.o
