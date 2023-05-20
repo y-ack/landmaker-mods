@@ -1,4 +1,5 @@
 roms/*
+intermediate/*
 **out
 *.bin
 *.o
