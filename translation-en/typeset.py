@@ -4,6 +4,7 @@ import csv
 import json
 from PIL import Image,ImagePalette
 import numpy as np
+import re
 
 class Glyph:
     def __init__(self, glyphbitmap, width=0, hidth=14, lsb=0, advance=0, kern: dict[str,int]={}):
@@ -126,29 +127,19 @@ def get_mes(mes_csv):
         reader = csv.DictReader(csvfile)
         np.set_printoptions(threshold=np.inf)
         for row in reader:
+            # replace opening quotation marks with U+2C01
+            text = re.sub(r'"(.*)"', r'“\1"', row[cfg.TEXT_K])
             print(row[cfg.ID_K], row[cfg.TEXT_K])
             c = Canvas(288,48).draw_multiline(row[cfg.TEXT_K], glyphs).draw_outline()
             yield c, row[cfg.ID_K]
 
 def get_wmes(wmes_csv=cfg.WMES_CSV):
     """wmes bitmap generator"""
-    with open(wmes_csv, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        np.set_printoptions(threshold=np.inf)
-        for row in reader:
-            print(row[cfg.ID_K], row[cfg.TEXT_K])
-            c = Canvas(288,48).draw_multiline(row[cfg.TEXT_K], glyphs).draw_outline()
-            yield c, row[cfg.ID_K]
+    return get_mes(mes_csv=wmes_csv)
 
 def get_emes(emes_csv=cfg.EMES_CSV):
     """wmes bitmap generator"""
-    with open(emes_csv, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        np.set_printoptions(threshold=np.inf)
-        for row in reader:
-            print(row[cfg.ID_K], row[cfg.TEXT_K])
-            c = Canvas(288,48).draw_multiline(row[cfg.TEXT_K], glyphs).draw_outline()
-            yield c, row[cfg.ID_K]
+    return get_mes(mes_csv=emes_csv)
 
 def debug_save_mes(get_mes_fn):
     for c, mes_id in get_mes_fn:
