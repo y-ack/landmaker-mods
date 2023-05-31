@@ -128,7 +128,7 @@ def get_mes(mes_csv):
         np.set_printoptions(threshold=np.inf)
         for row in reader:
             # replace opening quotation marks with U+2C01
-            text = re.sub(r'"(.*)"', r'“\1"', row[cfg.TEXT_K])
+            text = re.sub(r'"(?sm)(.*)"', r'“\1"', row[cfg.TEXT_K])
             print(row[cfg.ID_K], text)
             c = Canvas(288,48).draw_multiline(text, glyphs).draw_outline()
             yield c, row[cfg.ID_K]
