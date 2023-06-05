@@ -1,5 +1,10 @@
-from os import makedirs
+from os import makedirs, environ
 """The main config file for the typesetting pipeline"""
+
+def set_wmes(path):
+    WMES_CSV = path
+def set_emes(path):
+    EMES_CSV = path
 
 # tile chip dimensions, always 16 for Taito F3
 TILE_W = 16
@@ -29,8 +34,8 @@ BG_IDX = 8
 
 # CSV path and keys to use
 #"ID","JAPANESE","PS EN","ENGLISH"
-WMES_CSV = 'landmakr-script - WMES.csv'
-EMES_CSV = 'landmakr-script - EMES.csv'
+WMES_CSV = environ.get('WMES_CSV') if environ.get('WMES_CSV') else 'landmakr-script - WMES.csv'
+EMES_CSV = environ.get('EMES_CSV') if environ.get('EMES_CSV') else 'landmakr-script - EMES.csv'
 ID_K = 'ID'
 TEXT_K = 'ENGLISH'
 

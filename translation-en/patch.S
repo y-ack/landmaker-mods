@@ -127,6 +127,7 @@ new_title_text:
 	jsr			strmov_textram
 	lea			($a,SP), SP
 	rts
+	align		16,0
 str_tl_credit:
 	dc.b	"          TRANSLATION BY MA97        \0"
 
@@ -135,4 +136,7 @@ str_tl_credit:
 	dc.b		"qcs.shsbs.xyz/share/ywy/\0"
 	align		16,0
 	dc.b		"font dev.    12\0"
-	dc.b		"   2023.04.30  \0"
+	dc.b		"   2023.06.04  \0"
+
+	ORG $102A68 + SHIFT_A1416
+	dc.w		2023, 06, 04, 04, 18

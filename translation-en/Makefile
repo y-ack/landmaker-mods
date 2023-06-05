@@ -13,24 +13,26 @@ AS = asl
 ASFLAGS=-i . -i .. -n -U -q +t 70 -r 1
 P2BIN = p2bin
 ZIP = zip
-IPS = uips c
+IPS = flips --create --bps
 INTERLEAVE = ../util/interleave.rb
 DEINTERLEAVE = ../util/deinterleave.rb
 TARGETS = landmakr
+WMES = "landmakr-script - WMES.csv"
+EMES = "landmakr-script - EMES.csv"
 
-.PHONY: landmakr landmakrj ips landmakr_ips landmakrj_ips gfx_patched scr_lo_out obj_lo_out
+.PHONY: landmakr landmakrj youen ips landmakr_ips landmakrj_ips gfx_patched scr_lo_out obj_lo_out
 .PRECIOUS: %_program_patched.bin
 
 all: $(TARGETS)
 
 LANDMAKRJ_OUT_PRG_ROMFILES = $(addprefix $(OUTDIR)/landmakrj/,$(landmakrj_program_romfiles))
 LANDMAKR_OUT_PRG_ROMFILES = $(addprefix $(OUTDIR)/landmakr/,$(landmakr_program_romfiles))
-LANDMAKRJ_OUT_PRG_IPSFILES = $(addsuffix .ips,$(addprefix $(IPSDIR)/landmakrj/,$(landmakrj_program_romfiles)))
-LANDMAKR_OUT_PRG_IPSFILES = $(addsuffix .ips,$(addprefix $(IPSDIR)/landmakr/,$(landmakr_program_romfiles)))
+LANDMAKRJ_OUT_PRG_IPSFILES = $(addsuffix .bps,$(addprefix $(IPSDIR)/landmakrj/,$(landmakrj_program_romfiles)))
+LANDMAKR_OUT_PRG_IPSFILES = $(addsuffix .bps,$(addprefix $(IPSDIR)/landmakr/,$(landmakr_program_romfiles)))
 # necessary?
 ALL_GFX_ROMFILES = $(landmakr_obj_hi_romfiles) $(landmakr_obj_lo_romfiles) $(landmakr_scr_hi_romfiles) $(landmakr_scr_lo_romfiles)
 LANDMAKR_OUT_GFX_ROMFILES = $(addprefix $(OUTDIR)/landmakr/,$(ALL_GFX_ROMFILES))
-LANDMAKR_OUT_GFX_IPSFILES = $(addsuffix .ips,$(addprefix $(IPSDIR)/landmakr/,$(ALL_GFX_ROMFILES)))
+LANDMAKR_OUT_GFX_IPSFILES = $(addsuffix .bps,$(addprefix $(IPSDIR)/landmakr/,$(ALL_GFX_ROMFILES)))
 LANDMAKR_OUT_OBJ_LO_ROMFILES = $(addprefix $(OUTDIR)/landmakr/,$(landmakr_obj_lo_romfiles))
 LANDMAKR_OUT_SCR_LO_ROMFILES = $(addprefix $(OUTDIR)/landmakr/,$(landmakr_scr_lo_romfiles))
 LANDMAKR_OUT_OBJ_HI_ROMFILES = $(addprefix $(OUTDIR)/landmakr/,$(landmakr_obj_hi_romfiles))
@@ -64,10 +66,10 @@ $(LANDMAKR_OUT_SCR_HI_ROMFILES): $(OUTDIR)/landmakr/ gfx_patched scr_hi_gfx_patc
 
 $(IPSDIR)/%/:
 	mkdir -p $@
-$(IPSDIR)/landmakrj/%.ips: $(ROMDIR)/landmakrj/% $(OUTDIR)/landmakrj/%
-	$(IPS) $@ $^
-$(IPSDIR)/landmakr/%.ips: $(ROMDIR)/landmakr/% $(OUTDIR)/landmakr/%
-	$(IPS) $@ $^
+$(IPSDIR)/landmakrj/%.bps: $(ROMDIR)/landmakrj/% $(OUTDIR)/landmakrj/%
+	$(IPS) $^ $@
+$(IPSDIR)/landmakr/%.bps: $(ROMDIR)/landmakr/% $(OUTDIR)/landmakr/%
+	$(IPS) $^ $@
 
 $(ROMDIR)/%/: $(ROMDIR)/%.zip
 	unzip $< -d $@
@@ -90,7 +92,7 @@ scr_lo_gfx.bin: $(ROMDIR)/landmakr/
 
 # python goes here !
 gfx_patched: obj_lo_gfx.bin obj_hi_gfx.bin scr_lo_gfx.bin scr_hi_gfx.bin
-	python3 main.py
+	WMES_CSV=$(WMES) EMES_CSV=$(EMES) python3 main.py
 #	python3 copy_kariwaku_tiles.py
 
 $(OUTDIR)/%/: $(ROMDIR)/%
@@ -99,6 +101,7 @@ $(OUTDIR)/%/: $(ROMDIR)/%
 
 clean:
 	@-rm -r $(OUTDIR)
+	@-rm -r $(IPSDIR)
 	@-rm *.o
 	@-rm *.bin
 

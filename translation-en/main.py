@@ -1,10 +1,11 @@
+import sys
+import os
+
 import config as cfg
 import generate_tiles as tilegen
 import typeset
-import os
 
-
-if __name__ == '__main__':
+if __name__ == '__main__':    
     os.system('rm tables-wmes.s')
     os.system('rm tables-emes.s')
     os.system(f'cp {cfg.SCR_HI} {cfg.SCR_HI_OUT}')
