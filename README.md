@@ -31,7 +31,7 @@ the steps for patching are:
 4) deinterleave patched binary into original rom files
 5) package up new files, create ips patches
 
-## development / how to make a patch (wip)
+## development / how to make a patch
 1) copy `example/` template with assembler source and makefile
 2) write patch
 3) `make landmakr` or `make landmakrj`
@@ -52,6 +52,8 @@ for more information on the shift tables and their derivation, see: https://qcs.
 rom map: < wip >
 
 ## other
-https://github.com/y-ack/landmaker-color-mod
+palette mods: https://github.com/y-ack/landmaker-color-mod
 
-y's land maker investigation home page: https://qcs.shsbs.xyz/share/ywy/land-maker
+land maker english fan translation patch homepage: https://qcs.shsbs.xyz/share/ywy/land-maker-english-translation.html
+
+y's land maker investigation homepage: https://qcs.shsbs.xyz/share/ywy/land-maker
